@@ -15,7 +15,7 @@ class Spa {
 	static protected $instance = null;
 	static protected $defaults = array();
 	static protected $cipher = null;
-	static protected $bypass = array("resolve", "launch", "magic", "autoload");
+	static protected $shotcut = array("resolve", "launch", "magic", "autoload");
     protected $preserved = array("config", "injector");
     protected $scope=null;
 	protected $dependencies = array();
@@ -71,12 +71,12 @@ class Spa {
 	}
 
 	static protected function __onStaticCall($method, $arguments) {
-		return forward_static_call(array("static", "_bypass"), $method, $arguments);
+		return forward_static_call(array("static", "_shotcut"), $method, $arguments);
 	}
 
 	protected function __onInstanceCall($method, $arguments) {
 		if (preg_match('/^[^_]+_' . $this->scope['cipher'] . '$/', $method)) {
-			return $this->__bypass($method, $arguments);
+			return $this->__shotcut($method, $arguments);
 		}
 
 		$whitelist = array_unique(array_merge($this->magics, $this->preserved));
@@ -89,8 +89,8 @@ class Spa {
 	}
 
 
-	static protected function _bypass($method, $arguments) {
-		$whitelist = static::$bypass;
+	static protected function _shotcut($method, $arguments) {
+		$whitelist = static::$shotcut;
 		if(in_array($method, $whitelist)) {
 			$instance = static::getInstance();
 			$cipher = static::$cipher;
@@ -100,7 +100,7 @@ class Spa {
 		return trigger_error("undefined method: " . get_called_class() . "::{$method}", E_USER_WARNING);
 	}
 
-	protected function __bypass($method, $arguments) {
+	protected function __shotcut($method, $arguments) {
 		$method = preg_replace('/^([^_]+)_' . $this->scope['cipher'] . '$/', "_$1", $method);
 		return call_user_func_array(array($this, $method), $arguments);
 	}

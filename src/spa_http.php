@@ -3,7 +3,7 @@ class SpaHttp extends SpaBaseProvider {
 	static protected $instance = null;
 	static protected $defaults = array();
 	static protected $cipher = null;
-	static protected $bypass = array("value", "session", "cookie", "header");
+	static protected $shotcut = array("value", "session", "cookie", "header");
 	protected $scope=null;
     protected $dependencies = array();
     protected $magics = array("_value");

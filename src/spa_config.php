@@ -7,7 +7,7 @@ class SpaConfig extends SpaBaseProvider
     static protected $instance = null;
     static protected $defaults = array();
     static protected $cipher = null;
-    static protected $bypass = array("get", "load", "cache", "option");
+    static protected $shotcut = array("get", "load", "cache", "option");
     protected $scope=null;
     protected $dependencies = array();
     protected $magics = array("_cache", "_option");
