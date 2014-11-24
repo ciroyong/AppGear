@@ -2,8 +2,7 @@
 /**
 * 
 */
-class SpaBaseMysqliProvider extends SpaBaseProvider
-{
+class AgMysqli extends AgBaseProvider {
 	private static $counters = array(
 		"QUERY_NUMS" => 0,
 	);

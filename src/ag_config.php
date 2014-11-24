@@ -2,7 +2,7 @@
 /**
 * 
 */
-class SpaConfig extends SpaBaseProvider
+class AgConfig extends AgBaseProvider
 {
     static protected $instance = null;
     static protected $defaults = array();

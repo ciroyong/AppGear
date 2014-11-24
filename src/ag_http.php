@@ -1,5 +1,5 @@
 <?php
-class SpaHttp extends SpaBaseProvider {
+class AgHttp extends AgBaseProvider {
 	static protected $instance = null;
 	static protected $defaults = array();
 	static protected $cipher = null;

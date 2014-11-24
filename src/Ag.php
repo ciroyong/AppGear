@@ -1,6 +1,6 @@
 <?php
-if (!defined("SPA_DIR")) {
-	define("SPA_DIR", __DIR__ . DIRECTORY_SEPARATOR);
+if (!defined("AG_DIR")) {
+	define("AG_DIR", __DIR__ . DIRECTORY_SEPARATOR);
 }
 
 /*
@@ -9,9 +9,9 @@ if (!defined("SPA_DIR")) {
 class MinError {}
 
 /*
- * @class Spa
+ * @class Ag
 **/
-class Spa {
+class Ag {
 	static protected $instance = null;
 	static protected $defaults = array();
 	static protected $cipher = null;
@@ -131,7 +131,7 @@ class Spa {
 	}
 
     /*
-    * Resolve Spa Uri
+    * Resolve Ag Uri
     * @param: $uri
     * @returnValue: array tokens
     */
@@ -153,10 +153,10 @@ class Spa {
             $path =helper::filter_url($path);
 
             if($path === "") {
-            	return SpaConfig::get("Spa:defult_action");;
+            	return AgConfig::get("Ag:defult_action");;
             }
 
-            $rules = SpaConfig::get("Spa:rules");
+            $rules = AgConfig::get("Ag:rules");
 
 			foreach($rules as $name => $value) {
 				if(preg_match($name, $path, $matches)) {
@@ -164,10 +164,10 @@ class Spa {
 				}
 			}
 			
-    		return SpaConfig::get("Spa:not_found_action");
+    		return AgConfig::get("Ag:not_found_action");
         }
 
-        return SpaConfig::get("Spa:error_action") . "?page=403";
+        return AgConfig::get("Ag:error_action") . "?page=403";
 	}    
 	/*
 	 * 
@@ -190,8 +190,8 @@ class Spa {
         $scheme = isset($tokens["scheme"])?$tokens["scheme"]:null;
 
         if($scheme === "config") {
-        	SpaConfig::option($tokens["queries"]);
-        	SpaConfig::load(trim($tokens["path"], "/"), $tokens["host"]);
+        	AgConfig::option($tokens["queries"]);
+        	AgConfig::load(trim($tokens["path"], "/"), $tokens["host"]);
         	return true;
         }
 
@@ -206,7 +206,7 @@ class Spa {
 	 * 
 	**/
     final private function _launch() {
-        return $this->_resolve($this->_route(SpaHttp::value("path_info")));
+        return $this->_resolve($this->_route(AgHttp::value("path_info")));
     }
 
 
@@ -247,7 +247,7 @@ class Spa {
 	/*
 	 * 
 	**/
-	final private function _autoload($name, $path=SPA_DIR) {
+	final private function _autoload($name, $path=AG_DIR) {
 		if(class_exists($name))
             return true;
 		
@@ -259,8 +259,8 @@ class Spa {
 		if (!!strpos($filename, "_")) {
 			$pathname = preg_replace('/^([^_]*(?=_)).*/', "$1", $filename);
 
-			if($pathname != "spa") {
-				$paths = SpaConfig::get("Spa:paths");
+			if($pathname != "ag") {
+				$paths = AgConfig::get("Ag:paths");
 				if (isset($paths[$pathname])) {
 					$path = BASE_DIR . $paths[$pathname];
 				}
@@ -281,12 +281,12 @@ class Spa {
 /*
  * 
 **/
-class_alias("Spa", "SpaBaseProvider");
+class_alias("Ag", "AgBaseProvider");
 
 /*
  * 
 **/
 spl_autoload_register(function ($className) {
-	return Spa::autoload("$className");
+	return Ag::autoload("$className");
 });
 ?>
