@@ -82,8 +82,11 @@ final class AgMysqli extends AgBaseProvider {
 		return trigger_error("Db connect error. Cannot connect to host: [{$username}@{$ip}@{$port}]", E_USER_WARNING);
 	}
 
+    private function __extraDbInfo($src) {
 
-	final private static function __doQuery($link, $sql) {
+    }
+
+	final private function __doQuery($link, $sql) {
 		$start = microtime(true);
 		$ret = mysqli_query($link, $sql);
 		$end = microtime(true);
@@ -96,7 +99,7 @@ final class AgMysqli extends AgBaseProvider {
 		return $ret;
 	}
 
-	final private static function _useDb($link, $db) {
+	final private function _useDb($link, $db) {
 		if(!empty($link) && $link) {
 			return mysqli_select_db($link, $db);
 		}
@@ -104,7 +107,7 @@ final class AgMysqli extends AgBaseProvider {
 		return false;
 	}
 
-	final private static function _lastQuery() {
+	final private function _lastQuery() {
 		return $this->cache("last_sql");
 	}
 

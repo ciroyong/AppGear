@@ -6,7 +6,33 @@ if (!defined("AG_DIR")) {
 /*
  * Error backoff object
 **/
-class MinError {}
+final class MinError {
+	protected $levels = array("warning", "notice", "error");
+	public function __call($method, $arguments) {
+		return $this->__shotcut($method, $arguments);
+	}
+
+	protected function __shotcut($method, $arguments) {
+		if (in_array($method, $this->levels)) {
+			$message = call_user_func_array("sprintf", $arguments);
+			return call_user_func(array($this, "_{$method_exists}"), $message);
+		}
+
+		return $this->_error("undefined method, %s::%s ", "MinError", "{$method}");
+	}
+
+	final private function _warning($message) {
+		return trigger_error($message, E_USER_WARNING);
+	}
+
+	final private function _notice($message) {
+		return trigger_error($message, E_USER_NOTICE);
+	}
+
+	final private function _error($message) {
+		return trigger_error($message, E_USER_ERROR);
+	}
+}
 
 /*
  * @class Ag
@@ -85,7 +111,7 @@ class Ag {
 			return $this->__magic($method, $arguments);
 		}
 
-		return trigger_error("undefined method: " . get_called_class() . "::{$method}", E_USER_WARNING);
+		return $this->minError->warning("undefined method, %s::%s", get_called_class(), $method);
 	}
 
 
@@ -97,7 +123,7 @@ class Ag {
 			return call_user_func_array(array($instance, "{$method}_{$cipher}"), $arguments);
 		}
 
-		return trigger_error("undefined method: " . get_called_class() . "::{$method}", E_USER_WARNING);
+		return $this->minError->warning("undefined method, %s::%s", get_called_class(), $method);
 	}
 
 	protected function __shotcut($method, $arguments) {
@@ -117,7 +143,7 @@ class Ag {
 
 	protected function _counter($counter, $addup=null) {
 		if (!is_string($counter) || strlen($counter) < 1) {
-			return trigger_error("Wrong counter slot", E_USER_WARNING);
+			return $this->minError->warning("Wrong counter name format: %s", $counter);
 		}
 
 		if (is_null($addup)) {
@@ -158,7 +184,7 @@ class Ag {
     final private function _resolve($uri) {
         $tokens = helper::parse_uri($uri);
         if(is_null($tokens)) {
-            return trigger_error("error route info", E_USER_WARNING);
+            return $this->minError->warning("error route info");
         }
 
 
@@ -293,7 +319,7 @@ class Ag {
 			return true;
 		}
 
-		trigger_error("Failed load class: " . $name, E_USER_WARNING);
+		$this->minError->warning("Failed load class: %s", $name);
 		return false;
 	}
 }
