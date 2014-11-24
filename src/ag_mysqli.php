@@ -2,70 +2,73 @@
 /**
 * 
 */
-class AgMysqli extends AgBaseProvider {
-	private static $counters = array(
-		"QUERY_NUMS" => 0,
-	);
-	
-	private static $caches = array(
-		"LAST_SQL" => null,
-		"QUERIES" => array(),
-		"INSTANCES"=> array(),
-	);
+final class AgMysqli extends AgBaseProvider {
+	protected $instances = array();
+	static protected $defaults = array();
+	static protected $cipher = null;
+	static protected $shotcut = array();
+    protected $scope=null;
+	protected $dependencies = array();
+	protected $magics = array("cache", "queries");
+	protected $minError;
 
-	private $link = null;
-
-	private function __construct() {
-		$this->link = self::createConnection();
+	private function __construct($cipher, $config=array(), $defaults=array()) {
+		$this->scope = array("cipher"=>$cipher, "minError"=>new MinError);
+		$this->config($this->scope["defaults"]);
+		$this->link = $this->__createConnection($config);
 	}
 
 	public function __destruct() {
-		if($this->isReady()) {
-			mysqli_close($this->link);
-			$this->link = null;
-		}
+
 	}
 
-	public static function getInstance() {
-		$database = self::config("database");
-		$hash = hash('md4', "{$database}");
-		$instances = self::$caches["INSTANCES"];
-		
-		if(in_array($hash, $instances)) {
-			$instance = $instances[$hash];
-			if($instance->isReady()) {
-				return $instance;
-			}
-		}
-		
-		$instance = new self();
-		self::$caches["INSTANCES"][$hash] = $instance;
-		return $instance;
+	public function __toString() {
+
 	}
 
-	private static function createConnection() {
-		$hosts = self::config("hosts");
-		$database = self::config("database");
-		$password = self::config("password");
-		$timeout = self::config("timeout");
-		$charset = self::config("charset");
+	protected function getInstance() {
+		if (is_null(self::$cipher)) {
+			self::$cipher = hash("md4", mt_rand(0, time()));
+		}
+
+		$config = AgConfig::get("Ag:mysql");
+		
+		if(!isset($config["database"])) {
+			return trigger_error("cant instaniate db module", E_USER_WARNING);
+		}
+
+		$database = $config["database"];
+
+		if (!isset(self::$instances[$database])) {
+			self::$instances[$database] = new self(self::$cipher, $config, self::$defaults);
+		}
+
+		return self::$instance[$database];
+	}
+
+	final private function __createConnection($config) {
+		$hosts = $config["hosts"];
+		$database = $config["database"];
+		$password = $config["password"];
+		$timeout = $config["timeout"];
+		$charset = $config["charset"];
 
 		if (is_array($hosts)) {
 			if (sizeof($hosts)<1) {
-				throw new Exception("Db config error. There is no db connection info defined", 1);
+				return trigger_error("Db config error. There is no db connection info defined", E_USER_WARNING);
 			}
 		} else {
-			throw new Exception("Db config error. Wrong host format", 1);
+			return trigger_error("Db config error. Wrong host format", E_USER_WARNING);
 		}
 
 		$host = shuffle($hosts);
 		
-		list($username, $ip, $port) = extraDbInfo($host);
+		list($username, $ip, $port) = $this->__extraDbInfo($host);
 
 		$mysqli = mysqli_init();
 		
 		if(!mysqli_options($mysqli, MYSQLI_OPT_CONNECT_TIMEOUT, $timeout)) {
-			throw new Exception("Db Config error. Wrong Database option [timeout] type: '{$timeout}'", 1);
+			return trigger_error("Db Config error. Wrong Database option [timeout] type: '{$timeout}'", E_USER_WARNING);
 		}
 
 		if(@mysqli_real_connect($mysqli, $ip, $username, $password, $database, $port)) {
@@ -73,26 +76,27 @@ class AgMysqli extends AgBaseProvider {
 				return $mysqli;
 			}
 
-			throw new Exception("Db connect error. Error When Set Db Charset", 1);
+			return trigger_error("Db connect error. Error When Set Db Charset", E_USER_WARNING);
 		}
 
-		throw new Exception("Db connect error. Cannot connect to host: [{$username}@{$ip}@{$port}]", 1);
+		return trigger_error("Db connect error. Cannot connect to host: [{$username}@{$ip}@{$port}]", E_USER_WARNING);
 	}
 
 
-	public static function doQuery($link, $sql) {
+	final private static function __doQuery($link, $sql) {
 		$start = microtime(true);
 		$ret = mysqli_query($link, $sql);
 		$end = microtime(true);
 
-		self::$caches["LAST_SQL"] = $sql;
-		self::$caches["QUERIES"][] = array("{$sql}"=>$end-$start);
-		self::$counters["QUERY_NUMS"]++;
+		$this->cache("last_sql", $sql);
+		$this->queries(hash("md4", $sql), $end-$start);
+		$this->_counter("QUERY_NUMS");
+		$this->_counter("QUERY_NUMS", 1);
 		
 		return $ret;
 	}
 
-	public static function useDb($link, $db) {
+	final private static function _useDb($link, $db) {
 		if(!empty($link) && $link) {
 			return mysqli_select_db($link, $db);
 		}
@@ -100,36 +104,36 @@ class AgMysqli extends AgBaseProvider {
 		return false;
 	}
 
-	public static function lastQuery() {
-		return self::$caches["LAST_SQL"];
+	final private static function _lastQuery() {
+		return $this->cache("last_sql");
 	}
 
-	public static function queryNums() {
-		return self::$counters["QUERY_NUMS"];
+	final private function _queryNums() {
+		return $this->_counter("QUERY_NUMS");
 	}
 
-	public static function queries() {
-		return self::$caches["QUERIES"];
+	final private function _queries() {
+		return $this->queries();
 	}
 
-	public function isReady() {
+	final private function _isReady() {
 		return !empty($this->link) && $this->link;
 	}
 
-	public function isError() {
-		return $this->errno() > 0;
+	final private function _isError() {
+		return $this->_errorCode() > 0;
 	}
 
-	public function query($sql) {
-		if(!$this->isReady()) {
-			throw new Exception("Db is not ready", 1);
+	final private function _query($sql) {
+		if(!$this->_isReady()) {
+			return trigger_error("Db is not ready", E_USER_WARNING);
 		}
 
-		return self::doQuery($this->link, $sql);
+		return $this->__doQuery($this->link, $sql);
 	}
 
-	public function count($sql) {
-		$res = $this->query($sql);
+	final private function _count($sql) {
+		$res = $this->_query($sql);
 
 		if($this->isError()) {
 			return 0;
@@ -141,8 +145,8 @@ class AgMysqli extends AgBaseProvider {
 		return $count[0][0];
 	}
 
-	public function first($sql) {
-		$res = $this->query($sql);
+	final private function _first($sql) {
+		$res = $this->_query($sql);
 		
 		if($this->isError()) {
 			return false;
@@ -154,9 +158,9 @@ class AgMysqli extends AgBaseProvider {
 		return $ret;
 	}
 
-	public function all($sql) {
+	final private function _all($sql) {
 		$ret = array();
-		$res = $this->query($sql);
+		$res = $this->_query($sql);
 
 		if($this->isError()) {
 			return false;
@@ -171,9 +175,9 @@ class AgMysqli extends AgBaseProvider {
 		return $ret;
 	}
 
-	public function field($sql) {
+	final private function _field($sql) {
 		$ret = false;
-		$res = $this->query($sql);
+		$res = $this->_query($sql);
 
 		if($this->isError()) {
 			return false;
@@ -185,16 +189,16 @@ class AgMysqli extends AgBaseProvider {
 		return $ret[0];
 	}
 
-	public function affected() {
-		if($this->isReady()) {
+	final private function _affected() {
+		if($this->_isReady()) {
 			return mysqli_affected_rows($this->link);
 		}
 
 		return false;
 	}
 
-	public function transaction($sqls) {
-		if(!$this->isReady())
+	final private function _transaction($sqls) {
+		if(!$this->_isReady())
 		{
 			return false;
 		}
@@ -202,7 +206,7 @@ class AgMysqli extends AgBaseProvider {
 		mysqli_autocommit($this->link, false);
 		foreach($sqls as $sql)
 		{
-			$ret =  $this->query($this->link, $sql);
+			$ret =  $this->_query($this->link, $sql);
 			if(!$ret)
 			{
 				mysqli_rollback($this->link);
@@ -215,27 +219,27 @@ class AgMysqli extends AgBaseProvider {
 		return true;
 	}
 
-	public function lastInsertId() {
+	final private function _lastInsertId() {
 		return mysqli_insert_id($this->link);
 	}
 
-	public function realEscapeString($str) {
-		if($this->isReady()) {
+	final private function _realEscapeString($str) {
+		if($this->_isReady()) {
 			return mysqli_real_escape_string($this->link, $str);
 		}
 
 		return false;
 	}
 
-	public function error() {
-		if($this->isReady()) {
+	final private function _error() {
+		if($this->_isReady()) {
 			return mysqli_error($this->link);
 		}
 
 		return "Db is not ready";
 	}
 
-	public function errorNo() {
+	final private function _errorCode() {
 		return mysqli_errno($this->link);
 	}
 }

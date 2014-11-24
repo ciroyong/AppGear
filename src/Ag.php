@@ -115,6 +115,26 @@ class Ag {
 		return $this->_magic($this->scope["{$cipher}~{$method}"], $name, $value);
 	}
 
+	protected function _counter($counter, $addup=null) {
+		if (!is_string($counter) || strlen($counter) < 1) {
+			return trigger_error("Wrong counter slot", E_USER_WARNING);
+		}
+
+		if (is_null($addup)) {
+			return $this->_counter($counter, 0);
+		}
+
+		$cipher = $this->scope["cipher"];
+
+		if (!isset($this->scope["{$cipher}~{$counter}"])) {
+			return $this->scope["{$cipher}~{$counter}"] = $addup;
+		}
+
+		if (is_numeric($step)) {
+			return $this->scope["{$cipher}~{$counter}"] += $step;
+		}
+	}
+
 	/*
 	 * 
 	**/
@@ -131,10 +151,10 @@ class Ag {
 	}
 
     /*
-    * Resolve Ag Uri
-    * @param: $uri
-    * @returnValue: array tokens
-    */
+     * Resolve Ag Uri
+     * @param: $uri
+     * @returnValue: array tokens
+    **/
     final private function _resolve($uri) {
         $tokens = helper::parse_uri($uri);
         if(is_null($tokens)) {
@@ -255,19 +275,19 @@ class Ag {
 		    preg_replace('/(?=[[:upper:]])/', "_",
 		    lcfirst($name), -1));
 
-		// .stop_point
 		if (!!strpos($filename, "_")) {
 			$pathname = preg_replace('/^([^_]*(?=_)).*/', "$1", $filename);
-
 			if($pathname != "ag") {
 				$paths = AgConfig::get("Ag:paths");
+				$baseDir = AgConfig::get("Ag:paths"); 
 				if (isset($paths[$pathname])) {
-					$path = BASE_DIR . $paths[$pathname];
+					$path = $baseDir . $paths[$pathname];
 				}
 			}
 		}
 
 		$filename = "{$path}{$filename}.php";
+
 		if(file_exists($filename)) {
 			require_once $filename;
 			return true;
