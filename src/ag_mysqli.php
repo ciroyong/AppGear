@@ -34,7 +34,7 @@ final class AgMysqli extends AgBaseProvider {
 		$config = AgConfig::get("Ag:mysql");
 		
 		if(!isset($config["database"])) {
-			return trigger_error("cant instaniate db module", E_USER_WARNING);
+			return $this->minError->warning("cant instaniate db module");
 		}
 
 		$database = $config["database"];
@@ -55,10 +55,10 @@ final class AgMysqli extends AgBaseProvider {
 
 		if (is_array($hosts)) {
 			if (sizeof($hosts)<1) {
-				return trigger_error("Db config error. There is no db connection info defined", E_USER_WARNING);
+				return $this->minError->warning("Db config error. There is no db connection info defined");
 			}
 		} else {
-			return trigger_error("Db config error. Wrong host format", E_USER_WARNING);
+			return $this->minError->warning("Db config error. Wrong host format");
 		}
 
 		$host = shuffle($hosts);
@@ -68,7 +68,7 @@ final class AgMysqli extends AgBaseProvider {
 		$mysqli = mysqli_init();
 		
 		if(!mysqli_options($mysqli, MYSQLI_OPT_CONNECT_TIMEOUT, $timeout)) {
-			return trigger_error("Db Config error. Wrong Database option [timeout] type: '{$timeout}'", E_USER_WARNING);
+			return $this->minError->warning("Db Config error. Wrong Database option [timeout] type: '{$timeout}'");
 		}
 
 		if(@mysqli_real_connect($mysqli, $ip, $username, $password, $database, $port)) {
@@ -76,10 +76,10 @@ final class AgMysqli extends AgBaseProvider {
 				return $mysqli;
 			}
 
-			return trigger_error("Db connect error. Error When Set Db Charset", E_USER_WARNING);
+			return $this->minError->warning("Db connect error. Error When Set Db Charset");
 		}
 
-		return trigger_error("Db connect error. Cannot connect to host: [{$username}@{$ip}@{$port}]", E_USER_WARNING);
+		return $this->minError->warning("Db connect error. Cannot connect to host: [%s@%s:%s]", $username, $ip, $port);
 	}
 
     private function __extraDbInfo($src) {
@@ -129,7 +129,7 @@ final class AgMysqli extends AgBaseProvider {
 
 	final private function _query($sql) {
 		if(!$this->_isReady()) {
-			return trigger_error("Db is not ready", E_USER_WARNING);
+			return $this->minError->warning("Db is not ready");
 		}
 
 		return $this->__doQuery($this->link, $sql);
