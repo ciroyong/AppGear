@@ -3,13 +3,14 @@ class AgHttp extends AgBaseProvider {
 	static protected $instance = null;
 	static protected $defaults = array();
 	static protected $cipher = null;
-	static protected $shotcut = array("value", "session", "cookie", "header");
+	static protected $shortcut = array("value", "session", "cookie", "header");
 	protected $scope=null;
     protected $dependencies = array();
     protected $magics = array("_value");
     protected $minError;
 
 	private function __initialValues() {
+		session_start();
 		$this->_value($_GET, $_POST);
 		$this->_value(array(
 			"path_info" => $this->__get_path_info(),
@@ -94,7 +95,7 @@ class AgHttp extends AgBaseProvider {
 		return false;
 	}
 
-	private function _cookie($name=null, $value=null, $expire=null, $path=null, $domain=null) {
+	final protected function _cookie($name=null, $value=null, $expire=null, $path=null, $domain=null) {
 		if(is_string($name)) {
 			if(is_string($value)) {
 				setcookie($name, $value, $expire, $path, $domain);
@@ -119,7 +120,7 @@ class AgHttp extends AgBaseProvider {
 		return null;
 	}
 
-	private function _session($name=null, $value=null) {
+	final protected function _session($name=null, $value=null) {
 		if(is_string($name)) {
 			if(is_string($value)) {
 				$_SESSION[$name] = $value;
